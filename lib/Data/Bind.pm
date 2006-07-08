@@ -1,7 +1,7 @@
 package Data::Bind;
 use 5.008;
 use strict;
-our $VERSION = '0.25';
+our $VERSION = '0.26';
 
 use base 'Exporter';
 our @EXPORT = qw(bind_op bind_op2);
@@ -41,6 +41,7 @@ sub sig {
                is_writable   => $param->{is_rw},
                is_slurpy     => $param->{is_slurpy},
 	       invocant      => $param->{invocant},
+               constraint    => $param->{constraint},
 	       p5type        => substr($param->{var}, 0, 1),
 	       name          => substr($param->{var}, 1) });
 
@@ -61,7 +62,7 @@ sub sig {
 	}
 	else {
 	    unless ($db_param->is_slurpy) {
-		Carp::carp "positional argument after named ones" if $now_named;
+		Carp::carp("positional argument after named ones") if $now_named;
 	    }
 	    $db_param->is_optional(1)
 		if $param->{optional};
@@ -81,7 +82,17 @@ sub sig {
 
 sub _get_cv {
     my $sub = shift;
-    return B::svref_2object($sub)->GV->object_2svref;
+    my $gv = B::svref_2object($sub)->GV;
+
+    if ($gv->SAFENAME eq '__ANON__') {
+        # vivify a GV here
+        no strict 'refs';
+        my $nonce = "__ANON__::$sub";
+        return B::svref_2object(\*$nonce)->object_2svref;
+    }
+    else {
+        return $gv->object_2svref;
+    }
 }
 
 # store sig in the sig slot of the cv's gv
@@ -90,7 +101,7 @@ sub sub_signature {
     my $sub = shift;
     my $cv = _get_cv($sub);
     *$cv->{sig} = Data::Bind->sig(@_);
-    return;
+    return $sub;
 }
 
 sub arg_bind {
@@ -226,9 +237,23 @@ sub bind {
     return \@ret;
 }
 
+
+sub is_compatible {
+    my $self = shift;
+    no warnings 'redefine';
+    local *Data::Bind::Param::slurpy_bind = sub {};
+    local *Data::Bind::Param::bind = sub {};
+    local *Data::Bind::Array::bind = sub {};
+    my $invocant  = ref($_[0]) && ref($_[0]) eq 'ARRAY' ? undef : shift;
+    local $@;
+    eval { $self->bind({ invocant => $invocant, positional => [@{$_[0]}], named => {%{$_[1]}} }, 0)};
+    return $@ ? 0 : 1;
+}
+
+
 package Data::Bind::Param;
 use base 'Class::Accessor::Fast';
-__PACKAGE__->mk_accessors(qw(name p5type is_optional is_writable is_slurpy container_var named_only));
+__PACKAGE__->mk_accessors(qw(name p5type is_optional is_writable is_slurpy container_var named_only constraint));
 use Devel::LexAlias qw(lexalias);
 
 sub slurpy_bind {

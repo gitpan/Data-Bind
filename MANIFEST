@@ -3,8 +3,6 @@ CHANGES
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
-inc/Module/Install/Compiler.pm
-inc/Module/Install/Deprecated.pm
 inc/Module/Install/Fetch.pm
 inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
@@ -16,8 +14,9 @@ MANIFEST			This list of files
 META.yml
 t/arrays.t
 t/coderef.t
+t/compat.t
 t/highlevel.t
 t/scalars.t
 t/slurpy_param.t
 t/sub.t
-
+SIGNATURE                                Public-key signature (added by MakeMaker)
