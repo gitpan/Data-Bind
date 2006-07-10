@@ -15,9 +15,9 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 12009d842a7bd4db12daa0b1f560eeafaeaa2849 Bind.xs
-SHA1 d53e9ef8c7eb0fcb917969feb40b6f807d32a695 CHANGES
-SHA1 7d835da601641d6b25827adff0d43e9948e93dcd MANIFEST
-SHA1 48a123ca0f71781e99d822ed409cadc5658e5bc5 META.yml
+SHA1 60e8650e7a01f3aa5036f6df2d9335fe767c5b5c CHANGES
+SHA1 e9e6b9cc5471101cbe9a139094ac5175abad18f4 MANIFEST
+SHA1 fbba1372393a65d4d6c51aeb9a8704ec2eb0cf93 META.yml
 SHA1 4bbd78b1634117a663f0168dcdcabfe7396a0bde Makefile.PL
 SHA1 017bedfcba1e0c72b36301e6ef21b8712b84d175 inc/Module/Install.pm
 SHA1 b1a70869c098ba602151631386fc510b5bfd3511 inc/Module/Install/Base.pm
@@ -27,18 +27,18 @@ SHA1 176d68fe7c07b6ab7cfe09093078b8127bbde786 inc/Module/Install/Makefile.pm
 SHA1 8b37b38215d14f922b3d5132ce33d11d21d531ba inc/Module/Install/Metadata.pm
 SHA1 7eb44b00058c44795038d7fa4c0c77470f20a7f8 inc/Module/Install/Win32.pm
 SHA1 6d05967a5e1680b5f118315aaa6b8a1e143d79d8 inc/Module/Install/WriteAll.pm
-SHA1 5dfc32b662a3e3295feabc210c39f956184a7011 lib/Data/Bind.pm
+SHA1 1a93c85db71e5222cae1a8b27c146e6e4968e81f lib/Data/Bind.pm
 SHA1 67df39f03f1adfa7117454cbbdda05358cad09a7 t/arrays.t
 SHA1 7c8a2866cb58d929c638d844acdd06bcc2f2173b t/coderef.t
 SHA1 a33295683ba890cd0ca327e55445d9a243aed1f0 t/compat.t
 SHA1 2517e59aadbab91c439fd9f861ad52ca0ff9aaaf t/highlevel.t
 SHA1 5b62a7888df7a1fdc3c4b79638652e60aafce267 t/scalars.t
-SHA1 a62d4fea68e65e7ef59ceee10be243833285d8ba t/slurpy_param.t
-SHA1 75cc252f371bdc3b3bde4df31e34f335543addd8 t/sub.t
+SHA1 50cf8811d2b07c579b8a23268defe8810fa4e158 t/slurpy_param.t
+SHA1 c7da2ebae9d2f0056f7376f0bf520b97e8c81871 t/sub.t
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.0 (FreeBSD)
+Version: GnuPG v1.4.3 (FreeBSD)
 
-iD8DBQFEr14hk1XldlEkA5YRAm+hAJ9I4S/mnixrmaDflqeiMpBjBF1W/wCbBYZm
-HwBvVrPUftgwnEBosd0K3K8=
-=00LD
+iD8DBQFEstdLk1XldlEkA5YRAg2IAJ436eARrnZ6QbTVjt5vV2HsfEhrgACfYXUm
+5rni4063Sdi+GWhjgccZSec=
+=0K9Y
 -----END PGP SIGNATURE-----

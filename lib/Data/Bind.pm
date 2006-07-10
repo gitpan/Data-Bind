@@ -1,7 +1,7 @@
 package Data::Bind;
 use 5.008;
 use strict;
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 use base 'Exporter';
 our @EXPORT = qw(bind_op bind_op2);
@@ -37,11 +37,11 @@ sub sig {
     for my $param (@_) {
 	my $db_param = Data::Bind::Param->new
 	    ({ container_var => $param->{var},
-               named_only    => $param->{named_only},
-               is_writable   => $param->{is_rw},
-               is_slurpy     => $param->{is_slurpy},
+	       named_only    => $param->{named_only},
+	       is_writable   => $param->{is_rw},
+	       is_slurpy     => $param->{is_slurpy},
 	       invocant      => $param->{invocant},
-               constraint    => $param->{constraint},
+	       constraint    => $param->{constraint},
 	       p5type        => substr($param->{var}, 0, 1),
 	       name          => substr($param->{var}, 1) });
 
@@ -147,7 +147,7 @@ Data::Bind - Bind and alias variables
     Data::Bind->arg_bind(\@_);
   }
 
-  formalize([\'this is title', sub { "some code" } ], # positional
+  formalize([\('this is title', sub { "some code" }) ], # positional
             { subtitle => \'hello'} ); #named
 
 =head1 DESCRIPTION
@@ -178,7 +178,7 @@ use PadWalker qw(peek_my);
 
 sub bind {
     my ($self, $args, $lv) = @_;
-#    local $Carp::CarpLevel = 2;
+    local $Carp::CarpLevel = 2;
     $lv ||= 1;
     my %bound;
 
@@ -232,7 +232,10 @@ sub bind {
 	}
 	push @ret, $param->bind($current, $lv, $pad);
     }
-    # XXX: report extra incoming positional args
+    # extra incoming positional args
+    if (@$pos_arg) {
+	croak "extra positional argument.";
+    }
 
     return \@ret;
 }
@@ -250,6 +253,10 @@ sub is_compatible {
     return $@ ? 0 : 1;
 }
 
+sub arity {
+    my $self = shift;
+    scalar grep { !$_->is_optional } values %{$self->named};
+}
 
 package Data::Bind::Param;
 use base 'Class::Accessor::Fast';
@@ -326,6 +333,14 @@ sub FETCHSIZE {
 }
 
 1;
+
+=head1 SEE ALSO
+
+L<Sub::Multi>
+
+B<TODO: > Add a good reference to Perl6 multiple dispatch here. 
+
+B<TODO: > Add a good reference to Perl6 variable binding semantics
 
 =head1 AUTHORS
 
