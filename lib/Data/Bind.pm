@@ -1,7 +1,7 @@
 package Data::Bind;
 use 5.008;
 use strict;
-our $VERSION = '0.27';
+our $VERSION = '0.28';
 
 use base 'Exporter';
 our @EXPORT = qw(bind_op bind_op2);
@@ -25,6 +25,10 @@ sub bind_op {
 
 sub bind_op2 {
     my ($a, $b) = @_;
+    if (ref($a) eq 'ARRAY' && ref($b) ne 'ARRAY') {
+        # binding @array := $arrayref
+	$b = $$b;
+    }
     _alias_a_to_b($a, $b, 0);
 }
 
@@ -107,12 +111,14 @@ sub sub_signature {
 sub arg_bind {
     my $cv = _get_cv(caller_cv(1));
     my $invocant  = ref($_[1][0]) && ref($_[1][0]) eq 'ARRAY' ? undef : shift @{$_[1]};
+    return unless defined $invocant || @{$_[1]};
     my $install_local = *$cv->{sig}->bind({ invocant => $invocant, positional => $_[1][0], named => $_[1][1] }, 2);
     # We have to install the locals here, otherwise there can be
     # side-effects when it's too many levels away.
     for (@$install_local) {
 	my ($name, $code) = @$_;
 	no strict 'refs';
+	no warnings 'redefine';
 	*{$name} = $code;
 	Data::Bind::_forget_unlocal(2);
     }
@@ -295,7 +301,7 @@ sub bind {
     $lv++;
 
     if ($self->p5type eq '&') {
-	return [ 'main::'.$self->name => $$var ];
+	return [ (caller($lv-1))[0].'::'.$self->name => $$var ];
     }
     my $ref = $pad->{$self->container_var} or Carp::confess $self->container_var;
     if ($self->p5type eq '$') {
@@ -304,7 +310,12 @@ sub bind {
 	    lexalias($lv, $self->container_var, $var);
 	}
 	else {
-	    Data::Bind::_alias_a_to_b($ref, $var, 1);
+	    if (ref($var) eq 'ARRAY' || ref($var) eq 'HASH') {
+		Data::Bind::_alias_a_to_b($ref, \$var, 1);
+	    }
+	    elsif (defined $$var) {
+		Data::Bind::_alias_a_to_b($ref, $var, 1);
+	    }
 	}
 	return;
     }

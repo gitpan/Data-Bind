@@ -183,6 +183,17 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
     assert(SvNVX(a) == 0.0);
     assert(SvPVX(a) == NULL);
 
+    /* If a magic is assigned to $a, $a has SVt_MAGIC but no MAGIC attached.
+       This breaks the magicext below */
+    if ( type == SVt_PVMG && !SvMAGIC(b) ) {
+        type = 0;
+    }
+
+    /* if @array is bound to other thing, binding $array[1] to $x */
+    if ( type == SVt_PVLV && SvMAGIC(b) ) {
+        type = 0;
+    }
+
     if (type >= SVt_PVMG) {
         switch (type) {
             case SVt_PVHV:
@@ -202,6 +213,9 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
 		sv_magicext(a, SvMAGIC(b)->mg_obj, PERL_MAGIC_ext, &alias_vtbl, 0, 0);
 		//		SvREFCNT(SvMAGIC(a)->mg_obj)++;
 		mg_get(a);
+                break;
+	    }
+            case SVt_PVLV: {
                 break;
 	    }
             default:
