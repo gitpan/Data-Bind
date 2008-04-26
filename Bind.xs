@@ -189,6 +189,11 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
         type = 0;
     }
 
+    /* other mg */
+    if ( type == SVt_PVMG && SvMAGIC(b)->mg_virtual != &alias_vtbl) {
+        type = 0;
+    }
+
     /* if @array is bound to other thing, binding $array[1] to $x */
     if ( type == SVt_PVLV && SvMAGIC(b) ) {
         type = 0;
@@ -202,7 +207,7 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
                 HV *stash = gv_stashpv(type == SVt_PVHV ?
                                        "Data::Bind::Hash" : "Data::Bind::Array",
                                        TRUE);
-                hv_store(SvRV(tie), "real", 4, newRV_inc((SV *)b), 0);
+                hv_store((HV*)SvRV(tie), "real", 4, newRV_inc((SV *)b), 0);
                 sv_bless(tie, stash);
                 SvUPGRADE(a, SVt_PVAV);
                 hv_magic((HV*)a, (GV *)tie, PERL_MAGIC_tied);
@@ -221,6 +226,11 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
             default:
                 croak("don't know what to do yet for %d", type);
         }
+    }
+    else if (type == SVt_RV && SvAMAGIC(b)) {
+	SV *x = sv_newmortal();
+	sv_setsv(a, newRV_inc(SvRV(b)));
+	SvAMAGIC_on(a);
     }
     else {
         sv_magicext(a, b, PERL_MAGIC_ext, &alias_vtbl, 0, 0);
