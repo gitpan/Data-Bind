@@ -130,44 +130,11 @@ MGVTBL alias_vtbl = {
  0			/* dup */
 };
 
+
 typedef SV *SVREF;
 
-MODULE = Data::Bind                PACKAGE = Data::Bind
-
 void
-_forget_unlocal(IV howmany)
-  CODE:
-{
-    int lv;
-    for(lv=1; lv <= howmany; ++lv) {
-        PL_scopestack[PL_scopestack_ix - (lv + 1)] = PL_savestack_ix;
-    }
-}
-
-void
-_av_store(SV *av_ref, I32 key, SV *val)
-  CODE:
-{
-    /* XXX many checks */
-    AV *av = (AV *)SvRV(av_ref);
-    /* XXX unref the old one in slot? */
-    av_store(av, key, SvREFCNT_inc(SvRV(val)));
-}
-
-void
-_hv_store(SV *hv_ref, const char *key, SV *val)
-  CODE:
-{
-    /* XXX many checks */
-    HV *hv = (HV *)SvRV(hv_ref);
-    /* XXX unref the old one in slot? */
-    hv_store(hv, key, strlen(key), SvREFCNT_inc((SvRV(val))), 0);
-}
-
-void
-_alias_a_to_b(SVREF a, SVREF b, int read_only)
-  CODE:
-{
+__alias_a_to_b(SVREF a, SVREF b, int read_only) {
     /* This bit of evil lifted straight from Perl_newSVrv  */
     const U32 refcnt = SvREFCNT(a);
     int is_my = SvPADMY(a);
@@ -240,4 +207,126 @@ _alias_a_to_b(SVREF a, SVREF b, int read_only)
     if (read_only || SvREADONLY(b)) {
 	SvREADONLY_on(a);
     }
+}
+
+
+OP *___bind_pad(pTHX)
+{
+    dMARK; dAX; dSP; dITEMS;
+    int n = PL_op->op_targ;
+    int i;
+    for (i = 0; i < items; ++i) {
+        SAVECLEARSV(PAD_SVl(i+1));
+        // rw only for now
+        PAD_SVl(i+1) = SvREFCNT_inc(ST(i));
+    }
+    return NORMAL;
+}
+
+/* format:  [ [ order, mode, defaultsub ]... ] */
+
+OP *___bind_pad2(pTHX)
+{
+    dSP;
+    AV *_defargs = GvAV(PL_defgv);
+    AV *av = (AV *)SvRV(cSVOPx_sv(PL_op));
+    int i;
+    for (i = 0; i <= av_len(av); ++i) {
+        SV *current_arg = *av_fetch(_defargs, i, 0);
+        SV *entry = *av_fetch(av, i, 0);
+        IV order = SvIVX(*av_fetch((AV *)SvRV(entry), 0, 0));
+        SV *mode = *av_fetch((AV *)SvRV(entry), 1, 0); // XXX: should do SvOK
+        SV *default_sub = *av_fetch((AV *)SvRV(entry), 2, 0);
+        SAVECLEARSV(PAD_SVl(order));
+        /* XXX: check if order is over items, if so it means it's empty and we should apply default_sub->() */
+        if (SvIVX(mode)) {
+            PAD_SVl(order) = newSV(0);
+            SvSetSV(PAD_SVl(order), SvREFCNT_inc(current_arg));
+        }
+        else {
+            PAD_SVl(order) = SvREFCNT_inc(current_arg);
+//            PAD_SVl(order) = newSV(0);
+//            __alias_a_to_b(PAD_SVl(order), current_arg, 1);
+        }
+    }
+    RETURN;
+}
+
+
+MODULE = Data::Bind                PACKAGE = Data::Bind
+
+void
+OP_bind_pad(flags, n)
+    I32 flags
+    I32 n
+    SV** sparepad = NO_INIT
+    OP *o = NO_INIT
+    OP *saveop = NO_INIT
+    I32 typenum = NO_INIT
+    CODE:
+        sparepad = PL_curpad;
+        saveop = PL_op;
+        PL_curpad = AvARRAY(PL_comppad);
+        o = newOP(OP_CUSTOM, flags);
+        o->op_ppaddr = ___bind_pad;
+        o->op_targ = n;
+        PL_curpad = sparepad;
+        PL_op = saveop;
+        ST(0) = sv_newmortal();
+        sv_setiv(newSVrv(ST(0), "B::OP"), PTR2IV(o));
+
+void
+OP_bind_pad2(flags, spec)
+    I32 flags
+    SV *spec
+    SV** sparepad = NO_INIT
+    OP *o = NO_INIT
+    OP *saveop = NO_INIT
+    I32 typenum = NO_INIT
+    CODE:
+        sparepad = PL_curpad;
+        saveop = PL_op;
+        PL_curpad = AvARRAY(PL_comppad);
+        o = newSVOP(OP_CONST, flags, SvREFCNT_inc(spec));
+        o->op_ppaddr = ___bind_pad2;
+        PL_curpad = sparepad;
+        PL_op = saveop;
+        ST(0) = sv_newmortal();
+        sv_setiv(newSVrv(ST(0), "B::OP"), PTR2IV(o));
+
+void
+_forget_unlocal(IV howmany)
+  CODE:
+{
+    int lv;
+    for(lv=1; lv <= howmany; ++lv) {
+        PL_scopestack[PL_scopestack_ix - (lv + 1)] = PL_savestack_ix;
+    }
+}
+
+void
+_av_store(SV *av_ref, I32 key, SV *val)
+  CODE:
+{
+    /* XXX many checks */
+    AV *av = (AV *)SvRV(av_ref);
+    /* XXX unref the old one in slot? */
+    av_store(av, key, SvREFCNT_inc(SvRV(val)));
+}
+
+void
+_hv_store(SV *hv_ref, const char *key, SV *val)
+  CODE:
+{
+    /* XXX many checks */
+    HV *hv = (HV *)SvRV(hv_ref);
+    /* XXX unref the old one in slot? */
+    hv_store(hv, key, strlen(key), SvREFCNT_inc((SvRV(val))), 0);
+}
+
+void
+_alias_a_to_b(SVREF a, SVREF b, int read_only)
+  CODE:
+{
+    __alias_a_to_b(a, b, read_only);
 }
